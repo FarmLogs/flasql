@@ -7,7 +7,7 @@ import json
 from flask import request, Response
 from flask.views import MethodView
 
-from flask_graphql_views import graphiql
+from flasql import graphiql
 
 
 def format_error(error):

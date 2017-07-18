@@ -1,4 +1,4 @@
-# flask-graphql-views
+# flasql
 
 Basic flask views to provide endpoints for graphql queries, and an
 interactive graphql interface.
