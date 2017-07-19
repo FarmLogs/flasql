@@ -41,13 +41,19 @@ class GraphQLResult(object):
 
 
 class GraphQLView(MethodView):
-    def __init__(self, *args, sentry=None, result_class=None, schema=None,
-                 enable_graphiql=True):
+    def __init__(self, *args, schema=None,
+                              error_handler=None,
+                              result_class=None,
+                              enable_graphiql=True):
         super().__init__()
+
+        if not schema:
+            raise Exception("A graphene schema must be specified.")
+
         self.schema = schema
-        self.enable_graphiql = enable_graphiql
-        self.sentry = sentry.client if sentry else None
+        self.error_handler = error_handler or False
         self.result_class = result_class or GraphQLResult
+        self.enable_graphiql = enable_graphiql
 
     @property
     def can_display_graphiql(self):
@@ -115,14 +121,12 @@ class GraphQLView(MethodView):
 
         return resp
 
-    def track_errors(self, result):
-        if not self.sentry:
+    def track_errors(self, errors):
+        if not self.error_handler:
             return
 
-        for e in result.errors:
-            self.sentry.captureMessage(e, extra={
-                'params': self.params
-            })
+        for error in errors:
+            self.error_handler(error=error, params=self.params)
 
     def handle_request(self):
         params = self.params
@@ -134,9 +138,9 @@ class GraphQLView(MethodView):
         else:
             result = None
 
-        # this is where we would capture graphql errors and send to sentry
+        # this is where we would capture graphql errors
         if result and result.errors:
-            self.track_errors(result)
+            self.track_errors(result.errors)
 
         return self.format_execution_result(result)
 
