@@ -1,3 +1,5 @@
+import json
+
 from flasql import views
 
 
@@ -51,3 +53,12 @@ def test_format_error_with_two_locations():
         {'line': 3, 'column': 42},
         {'line': 7, 'column': 57},
     ]
+
+
+def test_graphqlresult_to_response():
+    result = views.GraphQLResult({'foo': 'bar'})
+    resp = result.to_response()
+    data = json.loads(resp.data)
+    assert data == {'foo': 'bar'}
+    assert resp.status_code == 200
+    assert resp.mimetype == 'application/json'
