@@ -41,11 +41,13 @@ class GraphQLResult(object):
 
 
 class GraphQLView(MethodView):
-    def __init__(self, *args, schema=None,
-                              error_handler=None,
-                              result_class=None,
-                              enable_graphiql=True):
-        super().__init__()
+    def __init__(self,
+                 schema=None,
+                 error_handler=None,
+                 result_class=None,
+                 enable_graphiql=True):
+
+        super(GraphQLView, self).__init__()
 
         if not schema:
             raise Exception("A graphene schema must be specified.")
