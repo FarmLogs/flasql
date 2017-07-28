@@ -2,9 +2,7 @@
 Intends to provide conveniences around mounting a Graphene schema
 
 """
-import json
-
-from flask import request, Response
+from flask import request, jsonify
 from flask.views import MethodView
 
 from flasql import graphiql
@@ -35,9 +33,7 @@ class GraphQLResult(object):
         self.result = result
 
     def to_response(self):
-        return Response(json.dumps(self.result),
-                        status=200,
-                        mimetype='application/json')
+        return jsonify(self.result)
 
 
 class GraphQLView(MethodView):
@@ -45,7 +41,8 @@ class GraphQLView(MethodView):
                  schema=None,
                  error_handler=None,
                  result_class=None,
-                 enable_graphiql=True):
+                 enable_graphiql=True,
+                 context_handler=None):
 
         super(GraphQLView, self).__init__()
 
@@ -56,6 +53,7 @@ class GraphQLView(MethodView):
         self.error_handler = error_handler or False
         self.result_class = result_class or GraphQLResult
         self.enable_graphiql = enable_graphiql
+        self.context_handler = context_handler or False
 
     @property
     def can_display_graphiql(self):
@@ -132,13 +130,18 @@ class GraphQLView(MethodView):
 
     def handle_request(self):
         params = self.params
+        result = None
 
         # This is where we actually submit our query to the graphql schema
         if params.get('query'):
-            result = self.schema.execute(
-                params.get('query'), variable_values=params.get('variables'))
-        else:
-            result = None
+            kwargs = {
+                'variable_values': params.get('variables')
+            }
+
+            if self.context_handler:
+                kwargs['context_value'] = self.context_handler()
+
+            result = self.schema.execute(params.get('query'), **kwargs)
 
         # this is where we would capture graphql errors
         if result and result.errors:
