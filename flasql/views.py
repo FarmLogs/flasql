@@ -10,8 +10,7 @@ from flasql import graphiql
 
 def format_error(error):
     """
-    Taken from graphql-python/graphql-core, modified to be a little more
-    robust.
+    Taken from graphql-python/graphql-core, modified to be a little more robust.
     https://github.com/graphql-python/graphql-core/blob/master/graphql/error/format_error.py
 
     """
@@ -42,7 +41,7 @@ class GraphQLView(MethodView):
                  error_handler=None,
                  result_class=None,
                  enable_graphiql=True,
-                 context_handler=None):
+                 context_factory=None):
 
         super(GraphQLView, self).__init__()
 
@@ -53,7 +52,7 @@ class GraphQLView(MethodView):
         self.error_handler = error_handler or False
         self.result_class = result_class or GraphQLResult
         self.enable_graphiql = enable_graphiql
-        self.context_handler = context_handler or False
+        self.context_factory = context_factory or False
 
     @property
     def can_display_graphiql(self):
@@ -138,8 +137,16 @@ class GraphQLView(MethodView):
                 'variable_values': params.get('variables')
             }
 
-            if self.context_handler:
-                kwargs['context_value'] = self.context_handler()
+            if self.context_factory:
+                try:
+                    # duck typing: we call dict on the result from our factory so that
+                    # we ensure consistency but allow for more flexibility in the
+                    # implementation of the factory.
+                    kwargs['context_value'] = dict(self.context_factory())
+
+                except TypeError:
+                    raise Exception(('The result of `context_factory` must be an iterable '
+                                     'that allows dict() to be called on it.'))
 
             result = self.schema.execute(params.get('query'), **kwargs)
 
