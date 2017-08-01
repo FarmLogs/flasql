@@ -127,6 +127,24 @@ class GraphQLView(MethodView):
         for error in errors:
             self.error_handler(error=error, params=self.params)
 
+    def context_value(self):
+        """
+        Handles calling the context_factory, if it is defined.
+
+        Duck typing: we call dict on the result from our factory so that
+        we ensure consistency, yet allow for more flexibility in implementation.
+
+        """
+        if not self.context_factory:
+            return None
+
+        try:
+            return dict(self.context_factory())
+
+        except TypeError:
+            raise Exception(('The result of `context_factory` must be an iterable '
+                             'that allows dict() to be called on it.'))
+
     def handle_request(self):
         params = self.params
         result = None
@@ -137,16 +155,9 @@ class GraphQLView(MethodView):
                 'variable_values': params.get('variables')
             }
 
-            if self.context_factory:
-                try:
-                    # duck typing: we call dict on the result from our factory so that
-                    # we ensure consistency but allow for more flexibility in the
-                    # implementation of the factory.
-                    kwargs['context_value'] = dict(self.context_factory())
-
-                except TypeError:
-                    raise Exception(('The result of `context_factory` must be an iterable '
-                                     'that allows dict() to be called on it.'))
+            context = self.context_value()
+            if context:
+                kwargs['context_value'] = context
 
             result = self.schema.execute(params.get('query'), **kwargs)
 
