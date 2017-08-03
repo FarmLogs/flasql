@@ -2,6 +2,8 @@ import json
 
 from flasql import views
 
+from tests.fixtures import app # noqa
+
 
 class MockLocation(object):
     def __init__(self, line, column):
@@ -23,6 +25,7 @@ class MockError(object):
 def test_format_error_no_details():
     e = MockError()
     formatted = views.format_error(e)
+
     assert formatted['message'] == 'string representation'
     assert 'locations' not in formatted
 
@@ -30,6 +33,7 @@ def test_format_error_no_details():
 def test_format_error_with_message():
     e = MockError(message='bailed out')
     formatted = views.format_error(e)
+
     assert formatted['message'] == 'bailed out'
     assert 'locations' not in formatted
 
@@ -38,6 +42,7 @@ def test_format_error_with_one_location():
     locations = [MockLocation(3, 42)]
     e = MockError(message='bailed out', locations=locations)
     formatted = views.format_error(e)
+
     assert formatted['message'] == 'bailed out'
     assert len(formatted['locations']) == 1
     assert formatted['locations'] == [{'line': 3, 'column': 42}]
@@ -47,6 +52,7 @@ def test_format_error_with_two_locations():
     locations = [MockLocation(3, 42), MockLocation(7, 57)]
     e = MockError(message='bailed out', locations=locations)
     formatted = views.format_error(e)
+
     assert formatted['message'] == 'bailed out'
     assert len(formatted['locations']) == 2
     assert formatted['locations'] == [
@@ -55,10 +61,11 @@ def test_format_error_with_two_locations():
     ]
 
 
-def test_graphqlresult_to_response():
+def test_graphqlresult_to_response(app): # noqa
     result = views.GraphQLResult({'foo': 'bar'})
     resp = result.to_response()
     data = json.loads(resp.data)
+
     assert data == {'foo': 'bar'}
     assert resp.status_code == 200
     assert resp.mimetype == 'application/json'

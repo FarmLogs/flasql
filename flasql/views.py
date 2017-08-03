@@ -2,9 +2,7 @@
 Intends to provide conveniences around mounting a Graphene schema
 
 """
-import json
-
-from flask import request, Response
+from flask import request, jsonify
 from flask.views import MethodView
 
 from flasql import graphiql
@@ -12,8 +10,7 @@ from flasql import graphiql
 
 def format_error(error):
     """
-    Taken from graphql-python/graphql-core, modified to be a little more
-    robust.
+    Taken from graphql-python/graphql-core, modified to be a little more robust.
     https://github.com/graphql-python/graphql-core/blob/master/graphql/error/format_error.py
 
     """
@@ -35,9 +32,7 @@ class GraphQLResult(object):
         self.result = result
 
     def to_response(self):
-        return Response(json.dumps(self.result),
-                        status=200,
-                        mimetype='application/json')
+        return jsonify(self.result)
 
 
 class GraphQLView(MethodView):
@@ -45,7 +40,8 @@ class GraphQLView(MethodView):
                  schema=None,
                  error_handler=None,
                  result_class=None,
-                 enable_graphiql=True):
+                 enable_graphiql=True,
+                 context_factory=None):
 
         super(GraphQLView, self).__init__()
 
@@ -56,6 +52,7 @@ class GraphQLView(MethodView):
         self.error_handler = error_handler or False
         self.result_class = result_class or GraphQLResult
         self.enable_graphiql = enable_graphiql
+        self.context_factory = context_factory or False
 
     @property
     def can_display_graphiql(self):
@@ -130,15 +127,39 @@ class GraphQLView(MethodView):
         for error in errors:
             self.error_handler(error=error, params=self.params)
 
+    def context_value(self):
+        """
+        Handles calling the context_factory, if it is defined.
+
+        Duck typing: we call dict on the result from our factory so that
+        we ensure consistency, yet allow for more flexibility in implementation.
+
+        """
+        if not self.context_factory:
+            return None
+
+        try:
+            return dict(self.context_factory())
+
+        except TypeError:
+            raise Exception(('The result of `context_factory` must be an iterable '
+                             'that allows dict() to be called on it.'))
+
     def handle_request(self):
         params = self.params
+        result = None
 
         # This is where we actually submit our query to the graphql schema
         if params.get('query'):
-            result = self.schema.execute(
-                params.get('query'), variable_values=params.get('variables'))
-        else:
-            result = None
+            kwargs = {
+                'variable_values': params.get('variables')
+            }
+
+            context = self.context_value()
+            if context:
+                kwargs['context_value'] = context
+
+            result = self.schema.execute(params.get('query'), **kwargs)
 
         # this is where we would capture graphql errors
         if result and result.errors:
