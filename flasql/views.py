@@ -2,7 +2,7 @@
 Intends to provide conveniences around mounting a Graphene schema
 
 """
-from flask import request, jsonify
+from flask import request, json, jsonify
 from flask.views import MethodView
 
 from flasql import graphiql
@@ -127,7 +127,8 @@ class GraphQLView(MethodView):
         for error in errors:
             self.error_handler(error=error, params=self.params)
 
-    def context_value(self):
+    @property
+    def context(self):
         """
         Handles calling the context_factory, if it is defined.
 
@@ -145,6 +146,18 @@ class GraphQLView(MethodView):
             raise Exception(('The result of `context_factory` must be an iterable '
                              'that allows dict() to be called on it.'))
 
+    @property
+    def variables(self):
+        variables = self.params.get('variables', None)
+
+        if not variables:
+            return None
+
+        if isinstance(variables, str):
+            return json.loads(variables)
+
+        return variables
+
     def handle_request(self):
         params = self.params
         result = None
@@ -152,12 +165,9 @@ class GraphQLView(MethodView):
         # This is where we actually submit our query to the graphql schema
         if params.get('query'):
             kwargs = {
-                'variable_values': params.get('variables')
+                'variable_values': self.variables,
+                'context_value': self.context
             }
-
-            context = self.context_value()
-            if context:
-                kwargs['context_value'] = context
 
             result = self.schema.execute(params.get('query'), **kwargs)
 
