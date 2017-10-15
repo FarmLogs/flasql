@@ -41,6 +41,7 @@ class GraphQLView(MethodView):
                  error_handler=None,
                  result_class=None,
                  enable_graphiql=True,
+                 graphiql_version=graphiql.GRAPHIQL_VERSION,
                  context_factory=None):
 
         super(GraphQLView, self).__init__()
@@ -53,6 +54,8 @@ class GraphQLView(MethodView):
         self.result_class = result_class or GraphQLResult
         self.enable_graphiql = enable_graphiql
         self.context_factory = context_factory or False
+        self.graphiql_version = graphiql_version
+        self._params = None
 
     @property
     def can_display_graphiql(self):
@@ -80,26 +83,35 @@ class GraphQLView(MethodView):
 
     @property
     def params(self):
+        if self._params:
+            return self._params
+
         request_keys = {'query', 'operationName', 'variables'}
 
         if request.method == 'GET':
             # we will collect the data from the query parameters,
             # such as ?query={}
-            return {k: request.args.get(k) for k in request_keys}
-
+            self._params = {k: request.args.get(k) for k in request_keys}
+            return self._params
         if request.method == 'POST':
             if request.mimetype == 'application/graphql':
                 return {'query': request.data.decode('utf8')}
 
             elif request.mimetype == 'application/json':
-                return request.json
+                payload = request.json
+                if "variables" in payload and isinstance(payload["variables"], str):
+                    payload["variables"] = json.loads(payload["variables"])
+                self._params = payload
+                return self._params
 
             elif request.mimetype in ('application/x-www-form-urlencoded',
                                       'multipart/form-data'):
-                return request.form
+                self._params = request.form
+                return self._params
 
         # Else, return an empty map
-        return {k: None for k in request_keys}
+        self._params = {k: None for k in request_keys}
+        return self._params
 
     def format_execution_result(self, result):
         """
@@ -185,7 +197,7 @@ class GraphQLView(MethodView):
         result = self.handle_request()
 
         if self.should_display_graphiql:
-            return graphiql.render(params=self.params, result=result)
+            return graphiql.render(params=self.params, result=result, graphiql_version=self.graphiql_version)
 
         return self.result_class(result)
 
