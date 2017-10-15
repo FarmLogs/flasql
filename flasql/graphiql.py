@@ -2,7 +2,7 @@ import json
 
 from flask import render_template_string
 
-GRAPHIQL_VERSION = '0.7.1'
+GRAPHIQL_VERSION = '0.11.5'
 
 TEMPLATE = '''<!--
 The request to this GraphQL server provided the header "Accept: text/html"
@@ -23,11 +23,14 @@ add "&raw" to the end of the URL within a browser.
     }
   </style>
   <meta name="referrer" content="no-referrer">
-  <link href="//cdn.jsdelivr.net/graphiql/{{graphiql_version}}/graphiql.css" rel="stylesheet" />
+
+  <script src="//cdn.jsdelivr.net/es6-promise/4.0.5/es6-promise.auto.min.js"></script>
   <script src="//cdn.jsdelivr.net/fetch/0.9.0/fetch.min.js"></script>
-  <script src="//cdn.jsdelivr.net/react/15.0.0/react.min.js"></script>
-  <script src="//cdn.jsdelivr.net/react/15.0.0/react-dom.min.js"></script>
-  <script src="//cdn.jsdelivr.net/graphiql/{{graphiql_version}}/graphiql.min.js"></script>
+  <script src="//cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
+  <script src="//cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
+
+  <link href="//cdn.jsdelivr.net/npm/graphiql@{{graphiql_version}}/graphiql.css" rel="stylesheet" />
+  <script src="//cdn.jsdelivr.net/npm/graphiql@{{graphiql_version}}/graphiql.min.js"></script>
 </head>
 <body>
   <script>
@@ -125,10 +128,11 @@ add "&raw" to the end of the URL within a browser.
 </html>'''  # noqa
 
 
-def render(params, result):
+def render(params, result, graphiql_version=GRAPHIQL_VERSION):
+    result = json.dumps(result, indent=2) if result else ""
     return render_template_string(
         TEMPLATE,
-        graphiql_version=GRAPHIQL_VERSION,
-        result=json.dumps(result, indent=2, ),
+        graphiql_version=graphiql_version or GRAPHIQL_VERSION,
+        result=result,
         params=params
     )
