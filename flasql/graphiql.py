@@ -1,6 +1,4 @@
-import json
-
-from flask import render_template_string
+from flask import render_template_string, json
 
 GRAPHIQL_VERSION = '0.11.5'
 
