@@ -197,7 +197,8 @@ class GraphQLView(MethodView):
         result = self.handle_request()
 
         if self.should_display_graphiql:
-            return graphiql.render(params=self.params, result=result, graphiql_version=self.graphiql_version)
+            return graphiql.render(params=self.params, result=result,
+                                   graphiql_version=self.graphiql_version)
 
         return self.result_class(result)
 
