@@ -90,21 +90,14 @@ add "&raw" to the end of the URL within a browser.
     // that it can be easily shared.
     function onEditQuery(newQuery) {
       parameters.query = newQuery;
-      updateURL();
     }
 
     function onEditVariables(newVariables) {
       parameters.variables = newVariables;
-      updateURL();
     }
 
     function onEditOperationName(newOperationName) {
       parameters.operationName = newOperationName;
-      updateURL();
-    }
-
-    function updateURL() {
-      history.replaceState(null, null, locationQuery(parameters));
     }
 
     // Render <GraphiQL /> into the body.
