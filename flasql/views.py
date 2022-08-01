@@ -14,8 +14,14 @@ def format_error(error):
     https://github.com/graphql-python/graphql-core/blob/master/graphql/error/format_error.py
 
     """
+    blocked_keywords = ['SQL']
+    error_message = error.message if hasattr(error, 'message') else str(error)
+    if any(kw in error_message for kw in blocked_keywords):
+        error_message = "Oops! Something went wrong! " \
+                        "Help us improve your experience by sending an error report"
+
     formatted_error = {
-        'message': error.message if hasattr(error, 'message') else str(error)
+        'message': error_message
     }
 
     if hasattr(error, 'locations') and error.locations is not None:
@@ -25,7 +31,6 @@ def format_error(error):
         ]
 
     return formatted_error
-
 
 class GraphQLResult(object):
     def __init__(self, result):
