@@ -6,31 +6,30 @@ from flask import request, json, jsonify
 from flask.views import MethodView
 
 from flasql import graphiql
+import os
 
 
 def format_error(error):
     """
     Taken from graphql-python/graphql-core, modified to be a little more robust.
     https://github.com/graphql-python/graphql-core/blob/master/graphql/error/format_error.py
-
     """
-    blocked_keywords = ['SQL']
-    error_message = error.message if hasattr(error, 'message') else str(error)
-    if any(kw in error_message for kw in blocked_keywords):
-        error_message = "Oops! Something went wrong! " \
-                        "Help us improve your experience by sending an error report"
+    formatted_error = {"message": "Oops! Something went wrong!"}
+    if "ENVIRONMENT" in os.environ:
+        if (
+            os.environ["ENVIRONMENT"] == "development"
+            or os.environ["ENVIRONMENT"] == "test"
+        ):
+            formatted_error = {
+                "message": error.message if hasattr(error, "message") else str(error)
+            }
 
-    formatted_error = {
-        'message': error_message
-    }
-
-    if hasattr(error, 'locations') and error.locations is not None:
-        formatted_error['locations'] = [
-            {'line': loc.line, 'column': loc.column}
-            for loc in error.locations
-        ]
-
+            if hasattr(error, "locations") and error.locations is not None:
+                formatted_error["locations"] = [
+                    {"line": loc.line, "column": loc.column} for loc in error.locations
+                ]
     return formatted_error
+
 
 class GraphQLResult(object):
     def __init__(self, result):
@@ -41,12 +40,14 @@ class GraphQLResult(object):
 
 
 class GraphQLView(MethodView):
-    def __init__(self,
-                 schema=None,
-                 error_handler=None,
-                 result_class=None,
-                 enable_graphiql=True,
-                 context_factory=None):
+    def __init__(
+        self,
+        schema=None,
+        error_handler=None,
+        result_class=None,
+        enable_graphiql=True,
+        context_factory=None,
+    ):
 
         super(GraphQLView, self).__init__()
 
@@ -62,7 +63,7 @@ class GraphQLView(MethodView):
     @property
     def can_display_graphiql(self):
         """Determines if we are *allowed* to display the UI"""
-        return self.enable_graphiql or 'raw' not in request.args
+        return self.enable_graphiql or "raw" not in request.args
 
     @property
     def request_wants_html(self):
@@ -71,12 +72,13 @@ class GraphQLView(MethodView):
         Taken from flask_graphql, refactor.
 
         """
-        best = request.accept_mimetypes.best_match(
-            ['application/json', 'text/html'])
+        best = request.accept_mimetypes.best_match(["application/json", "text/html"])
 
-        return (best == 'text/html' and
-                request.accept_mimetypes[best] >
-                request.accept_mimetypes['application/json'])
+        return (
+            best == "text/html"
+            and request.accept_mimetypes[best]
+            > request.accept_mimetypes["application/json"]
+        )
 
     @property
     def should_display_graphiql(self):
@@ -85,22 +87,24 @@ class GraphQLView(MethodView):
 
     @property
     def params(self):
-        request_keys = {'query', 'operationName', 'variables'}
+        request_keys = {"query", "operationName", "variables"}
 
-        if request.method == 'GET':
+        if request.method == "GET":
             # we will collect the data from the query parameters,
             # such as ?query={}
             return {k: request.args.get(k) for k in request_keys}
 
-        if request.method == 'POST':
-            if request.mimetype == 'application/graphql':
-                return {'query': request.data.decode('utf8')}
+        if request.method == "POST":
+            if request.mimetype == "application/graphql":
+                return {"query": request.data.decode("utf8")}
 
-            elif request.mimetype == 'application/json':
+            elif request.mimetype == "application/json":
                 return request.json
 
-            elif request.mimetype in ('application/x-www-form-urlencoded',
-                                      'multipart/form-data'):
+            elif request.mimetype in (
+                "application/x-www-form-urlencoded",
+                "multipart/form-data",
+            ):
                 return request.form
 
         # Else, return an empty map
@@ -118,10 +122,10 @@ class GraphQLView(MethodView):
         resp = {}
 
         if result.data:
-            resp['data'] = result.data
+            resp["data"] = result.data
 
         if result.errors:
-            resp['errors'] = [format_error(e) for e in result.errors]
+            resp["errors"] = [format_error(e) for e in result.errors]
 
         return resp
 
@@ -148,12 +152,16 @@ class GraphQLView(MethodView):
             return dict(self.context_factory())
 
         except TypeError:
-            raise Exception(('The result of `context_factory` must be an iterable '
-                             'that allows dict() to be called on it.'))
+            raise Exception(
+                (
+                    "The result of `context_factory` must be an iterable "
+                    "that allows dict() to be called on it."
+                )
+            )
 
     @property
     def variables(self):
-        variables = self.params.get('variables', None)
+        variables = self.params.get("variables", None)
 
         if not variables:
             return None
@@ -168,13 +176,10 @@ class GraphQLView(MethodView):
         result = None
 
         # This is where we actually submit our query to the graphql schema
-        if params.get('query'):
-            kwargs = {
-                'variable_values': self.variables,
-                'context_value': self.context
-            }
+        if params.get("query"):
+            kwargs = {"variable_values": self.variables, "context_value": self.context}
 
-            result = self.schema.execute(params.get('query'), **kwargs)
+            result = self.schema.execute(params.get("query"), **kwargs)
 
         # this is where we would capture graphql errors
         if result and result.errors:
