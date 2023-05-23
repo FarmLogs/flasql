@@ -124,6 +124,7 @@ def test_graphqlresult_to_response(app):  # noqa
     assert resp.status_code == 200
     assert resp.mimetype == "application/json"
 
+
 @mock.patch.dict(os.environ, {"ENVIRONMENT": "live"})
 def test_format_error_handles_assertionerror(monkeypatch):
     formatted = views.format_error(AssertionError("AssertionError occurred"))
@@ -155,6 +156,7 @@ def test_format_error_handles_unexpected_errors(monkeypatch):
 
     assert formatted["message"] == "Oops! Something went wrong!"
     assert "locations" not in formatted
+
 
 @mock.patch.dict(os.environ, {"ENVIRONMENT": "live"})
 def test_format_error_handles_validationerror():

@@ -20,7 +20,8 @@ def format_error(error):
 
     if isinstance(error, (ValidationError, AssertionError, GraphQLSyntaxError, ValueError)):
         formatted_error["message"] = str(error)
-    elif "ENVIRONMENT" in os.environ and (os.environ["ENVIRONMENT"] == "development" or os.environ["ENVIRONMENT"] == "test"):
+    elif "ENVIRONMENT" in os.environ and\
+            (os.environ["ENVIRONMENT"] == "development" or os.environ["ENVIRONMENT"] == "test"):
         formatted_error = {
             "message": error.message if hasattr(error, "message") else str(error)
         }
@@ -31,9 +32,6 @@ def format_error(error):
             ]
 
     return formatted_error
-
-
-
 
 
 class GraphQLResult(object):
