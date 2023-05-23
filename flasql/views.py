@@ -7,6 +7,8 @@ from flask.views import MethodView
 
 from flasql import graphiql
 import os
+from pydantic import ValidationError
+from graphql import GraphQLSyntaxError
 
 
 def format_error(error):
@@ -15,19 +17,20 @@ def format_error(error):
     https://github.com/graphql-python/graphql-core/blob/master/graphql/error/format_error.py
     """
     formatted_error = {"message": "Oops! Something went wrong!"}
-    if "ENVIRONMENT" in os.environ:
-        if (
-            os.environ["ENVIRONMENT"] == "development"
-            or os.environ["ENVIRONMENT"] == "test"
-        ):
-            formatted_error = {
-                "message": error.message if hasattr(error, "message") else str(error)
-            }
 
-            if hasattr(error, "locations") and error.locations is not None:
-                formatted_error["locations"] = [
-                    {"line": loc.line, "column": loc.column} for loc in error.locations
-                ]
+    if isinstance(error, (ValidationError, GraphQLSyntaxError)):
+        formatted_error["message"] = str(error)
+    elif "ENVIRONMENT" in os.environ and\
+            (os.environ["ENVIRONMENT"] == "development" or os.environ["ENVIRONMENT"] == "test"):
+        formatted_error = {
+            "message": error.message if hasattr(error, "message") else str(error)
+        }
+
+        if hasattr(error, "locations") and error.locations is not None:
+            formatted_error["locations"] = [
+                {"line": loc.line, "column": loc.column} for loc in error.locations
+            ]
+
     return formatted_error
 
 

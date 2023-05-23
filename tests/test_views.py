@@ -4,6 +4,13 @@ from flasql import views
 import mock
 import os
 from tests.fixtures import app  # noqa
+from graphql import GraphQLSyntaxError
+from pydantic import ValidationError, BaseModel
+from graphql.language.source import Source
+
+
+class Model(BaseModel):
+    name: str
 
 
 class MockLocation(object):
@@ -21,6 +28,10 @@ class MockError(object):
 
     def __str__(self):
         return "string representation"
+
+
+class UnexpectedError(Exception):
+    pass
 
 
 @mock.patch.dict(os.environ, {"ENVIRONMENT": "development"})
@@ -112,3 +123,31 @@ def test_graphqlresult_to_response(app):  # noqa
     assert data == {"foo": "bar"}
     assert resp.status_code == 200
     assert resp.mimetype == "application/json"
+
+
+@mock.patch.dict(os.environ, {"ENVIRONMENT": "live"})
+def test_format_error_handles_graphqlsyntaxerror(monkeypatch):
+    source = Source("GraphQLSyntaxError occurred")
+    error = GraphQLSyntaxError(source, position=0, description="GraphQLSyntaxError occurred")
+    formatted = views.format_error(error)
+
+    assert formatted["message"] == str(error)
+    assert "locations" not in formatted
+
+
+def test_format_error_handles_unexpected_errors(monkeypatch):
+    formatted = views.format_error(UnexpectedError("Unexpected error occurred"))
+
+    assert formatted["message"] == "Oops! Something went wrong!"
+    assert "locations" not in formatted
+
+
+@mock.patch.dict(os.environ, {"ENVIRONMENT": "live"})
+def test_format_error_handles_validationerror():
+    try:
+        Model(name=None)  # This will raise a ValidationError
+    except ValidationError as e:
+        formatted = views.format_error(e)
+        assert "1 validation error for Model" in formatted["message"]
+        assert "none is not an allowed value" in formatted["message"]
+        assert "locations" not in formatted
