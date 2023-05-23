@@ -18,7 +18,7 @@ def format_error(error):
     """
     formatted_error = {"message": "Oops! Something went wrong!"}
 
-    if isinstance(error, (ValidationError, AssertionError, GraphQLSyntaxError, ValueError)):
+    if isinstance(error, (ValidationError, GraphQLSyntaxError)):
         formatted_error["message"] = str(error)
     elif "ENVIRONMENT" in os.environ and\
             (os.environ["ENVIRONMENT"] == "development" or os.environ["ENVIRONMENT"] == "test"):

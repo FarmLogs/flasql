@@ -126,28 +126,12 @@ def test_graphqlresult_to_response(app):  # noqa
 
 
 @mock.patch.dict(os.environ, {"ENVIRONMENT": "live"})
-def test_format_error_handles_assertionerror(monkeypatch):
-    formatted = views.format_error(AssertionError("AssertionError occurred"))
-
-    assert formatted["message"] == "AssertionError occurred"
-    assert "locations" not in formatted
-
-
-@mock.patch.dict(os.environ, {"ENVIRONMENT": "live"})
 def test_format_error_handles_graphqlsyntaxerror(monkeypatch):
     source = Source("GraphQLSyntaxError occurred")
     error = GraphQLSyntaxError(source, position=0, description="GraphQLSyntaxError occurred")
     formatted = views.format_error(error)
 
     assert formatted["message"] == str(error)
-    assert "locations" not in formatted
-
-
-@mock.patch.dict(os.environ, {"ENVIRONMENT": "live"})
-def test_format_error_handles_valueerror(monkeypatch):
-    formatted = views.format_error(ValueError("ValueError occurred"))
-
-    assert formatted["message"] == "ValueError occurred"
     assert "locations" not in formatted
 
 
