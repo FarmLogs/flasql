@@ -8,7 +8,7 @@ from flask.views import MethodView
 from flasql import graphiql
 import os
 from pydantic import ValidationError
-from graphql import GraphQLSyntaxError
+from graphql.error import GraphQLSyntaxError
 
 
 def format_error(error):
