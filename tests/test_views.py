@@ -4,7 +4,7 @@ from flasql import views
 import mock
 import os
 from tests.fixtures import app  # noqa
-from graphql import GraphQLSyntaxError
+from graphql.error import GraphQLSyntaxError
 from pydantic import ValidationError, BaseModel
 from graphql.language.source import Source
 

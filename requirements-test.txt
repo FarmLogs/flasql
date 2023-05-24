@@ -1,5 +1,5 @@
 pytest
 flake8
-graphene
+graphene == 2.1.9
 mock
 pydantic
