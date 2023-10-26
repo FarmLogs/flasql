@@ -1,3 +1,4 @@
 Flask>=0.12.0
 graphene == 2.1.9
 pydantic
+werkzeug>=3.0.1 # not directly required, pinned by Snyk to avoid a vulnerability
