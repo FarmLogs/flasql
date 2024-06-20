@@ -8,7 +8,7 @@ from flask.views import MethodView
 from flasql import graphiql
 import os
 from pydantic import ValidationError
-from graphql.error import GraphQLSyntaxError
+from graphql.error import GraphQLSyntaxError, GraphQLError
 
 
 def format_error(error):
@@ -18,7 +18,7 @@ def format_error(error):
     """
     formatted_error = {"message": "Oops! Something went wrong!"}
 
-    if isinstance(error, (ValidationError, GraphQLSyntaxError)):
+    if isinstance(error, (ValidationError, GraphQLSyntaxError, GraphQLError)):
         formatted_error["message"] = str(error)
     elif "ENVIRONMENT" in os.environ and\
             (os.environ["ENVIRONMENT"] == "development" or os.environ["ENVIRONMENT"] == "test"):
