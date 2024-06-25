@@ -4,7 +4,8 @@ from flasql import views
 import mock
 import os
 from tests.fixtures import app  # noqa
-from graphql.error import GraphQLSyntaxError
+from tests.fixtures import create_schema
+from graphql.error import GraphQLSyntaxError, GraphQLError
 from pydantic import ValidationError, BaseModel
 from graphql.language.source import Source
 
@@ -149,5 +150,22 @@ def test_format_error_handles_validationerror():
     except ValidationError as e:
         formatted = views.format_error(e)
         assert "1 validation error for Model" in formatted["message"]
-        assert "none is not an allowed value" in formatted["message"]
+        assert "Input should be a valid string" in formatted["message"]
         assert "locations" not in formatted
+
+
+@mock.patch.dict(os.environ, {"ENVIRONMENT": "live"})
+def test_format_error_handles_graphql_error():
+    schema = create_schema()
+
+    result = schema.execute('{ debug(param: "String") }')
+    assert len(result.errors) == 1
+    assert isinstance(result.errors[0], GraphQLError)
+
+    formatted = views.format_error(result.errors[0])
+    assert formatted["message"] == (
+        'Argument "param" has invalid value "String".'
+        + "\n"
+        + 'Expected type "Int", found "String".'
+    )
+    assert "locations" not in formatted

@@ -7,7 +7,7 @@ from flasql.views import GraphQLView
 
 
 class Query(graphene.ObjectType):
-    debug = graphene.String()
+    debug = graphene.String(param=graphene.Int())
 
     def resolve_debug(self, args, context, info):
         return 'Hi from GraphQL'
